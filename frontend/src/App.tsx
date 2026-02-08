@@ -54,15 +54,15 @@ function App() {
       
       {error && <div className="error">{error}</div>}
       
-      <div className="card">
+      <div class="card">
         <MessageForm onMessagePosted={handleMessagePosted} apiBase={API_BASE} />
       </div>
 
-      <div className="card">
+      <div class="card">
         {loading ? (
-          <div className="loading">加载中...</div>
+          <div class="loading">加载中...</div>
         ) : messages.length === 0 ? (
-          <div className="empty">暂无留言，快来抢沙发！</div>
+          <div class="empty">暂无留言，快来抢沙发！</div>
         ) : (
           <MessageList messages={messages} />
         )}

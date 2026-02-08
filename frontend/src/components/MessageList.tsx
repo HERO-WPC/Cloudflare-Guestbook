@@ -26,10 +26,6 @@ function MessageList({ messages }: Props) {
     return url.match(/\.(mp4|webm|mov|avi|mkv)$/i)
   }
 
-  const isImage = (url: string) => {
-    return url.match(/\.(jpg|jpeg|png|gif|webp)$/i)
-  }
-
   // 处理图片点击，可以打开模态框
   const handleImageClick = (src: string) => {
     const newWindow = window.open('', '_blank');
