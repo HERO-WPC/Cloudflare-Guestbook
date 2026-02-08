@@ -94,7 +94,7 @@ app.post('/api/upload', async (c) => {
         },
         body: JSON.stringify({
           message: `Upload ${file.name} via guestbook`,
-          content: fileBase64,  // 已经是 base64，不需要再次 btoa
+          content: fileBase64,
           branch: githubBranch
         })
       })
