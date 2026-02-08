@@ -176,24 +176,15 @@ export const FRONTEND_HTML = `
 
       const fileName = Date.now() + '-' + Math.random().toString(36).slice(2) + '-' + file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
       
-      // 获取上传 URL
-      const uploadRes = await fetch(auth.data.uploadUrl, {
-        method: 'GET',
-        headers: {
-          'Authorization': auth.data.authorizationToken
-        }
-      });
-      const uploadInfo = await uploadRes.json();
-
-      // 上传文件
+      // 直接上传文件，使用 /api/b2-auth 返回的信息
       const arrayBuffer = await file.arrayBuffer();
-      const uploadFileRes = await fetch(uploadInfo.uploadUrl, {
+      const uploadFileRes = await fetch(auth.data.uploadUrl, {
         method: 'POST',
         headers: {
-          'Authorization': uploadInfo.authorizationToken,
+          'Authorization': auth.data.authorizationToken,
           'X-Bz-File-Name': fileName,
           'Content-Type': file.type || 'application/octet-stream',
-          'Content-Length': arrayBuffer.byteLength
+          'X-Bz-Content-Sha1': 'do_not_verify'
         },
         body: arrayBuffer
       });
@@ -202,8 +193,7 @@ export const FRONTEND_HTML = `
         throw new Error('上传失败');
       }
 
-      const result = await uploadFileRes.json();
-      return result.fileName;
+      return fileName;
     }
 
     // 获取文件下载链接
