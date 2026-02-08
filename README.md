@@ -1,41 +1,88 @@
-# Cloudflare Workers 留言板部署指南
+# 🌟 Cloudflare Guestbook
 
-## 准备工作
+一个基于 Cloudflare Workers 和 React 的留言板应用，支持图片和视频上传。
 
-1. 注册 [Cloudflare](https://cloudflare.com) 账号
-2. 安装 [Wrangler CLI](https://developers.cloudflare.com/workers/wrangler/):
-   ```bash
-   npm install -g wrangler
-   ```
+![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers-yellow)
+![React](https://img.shields.io/badge/React-18-blue)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)
 
-3. 登录 Cloudflare:
-   ```bash
-   wrangler login
-   ```
+## ✨ 功能特性
 
-## 步骤 1: 创建 KV 命名空间
+- 📝 发布文字留言
+- 📎 支持图片上传 (JPG, PNG, GIF, WebP)
+- 🎬 支持视频上传 (MP4, WebM, MOV)
+- 🔒 单文件最大 10MB
+- 📚 最多 5 个附件
+- 📅 留言按时间倒序排列
+
+## 🏗️ 技术栈
+
+- **后端**: Cloudflare Workers (Hono)
+- **前端**: React + TypeScript + Vite
+- **数据存储**: Cloudflare KV
+- **文件存储**: Cloudflare R2
+
+## 🚀 快速开始
+
+### 前置要求
+
+- [Cloudflare](https://cloudflare.com) 账号
+- [Node.js](https://nodejs.org/) 18+
+- [Wrangler CLI](https://developers.cloudflare.com/workers/wrangler/install-update)
+
+### 安装 Wrangler
 
 ```bash
-# 创建 KV 命名空间
+npm install -g wrangler
+wrangler login
+```
+
+### 本地开发
+
+1. **克隆仓库**
+
+```bash
+git clone https://github.com/你的用户名/guestbook.git
+cd guestbook
+```
+
+2. **启动后端**
+
+```bash
+cd worker
+npm install
+npm run dev
+```
+
+3. **启动前端** (新终端)
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+访问 http://localhost:3000 查看效果。
+
+## ☁️ 部署到 Cloudflare
+
+### 1. 创建 KV 命名空间
+
+```bash
+cd worker
 wrangler kv:namespace create "MESSAGES"
-
-# 记下输出的 ID，更新 wrangler.toml
 ```
 
-## 步骤 2: 创建 R2 存储桶
+### 2. 创建 R2 存储桶
 
-1. 在 Cloudflare Dashboard 中进入 R2
-2. 创建一个名为 `guestbook-files` 的存储桶
-3. 在 Settings 中设置公开访问
+在 [Cloudflare Dashboard](https://dash.cloudflare.com) 中：
+- 进入 R2
+- 创建存储桶，命名为 `guestbook-files`
+- 设置为公开访问
 
-或者使用命令行：
-```bash
-# R2 需要通过 Dashboard 创建，然后配置 wrangler.toml
-```
+### 3. 配置 wrangler.toml
 
-## 步骤 3: 配置 wrangler.toml
-
-编辑 `worker/wrangler.toml`:
+编辑 `worker/wrangler.toml`，填入你的 KV ID：
 
 ```toml
 name = "guestbook-worker"
@@ -48,13 +95,13 @@ id = "YOUR_KV_ID"  # 替换为你的 KV ID
 
 [[r2_buckets]]
 binding = "FILES"
-bucket_name = "guestbook-files"  # 替换为你的 R2 桶名
+bucket_name = "guestbook-files"
 
 [vars]
-WORKER_URL = "https://your-worker-name.your-username.workers.dev"
+WORKER_URL = "https://your-worker.你的用户名.workers.dev"
 ```
 
-## 步骤 4: 安装依赖并部署后端
+### 4. 部署
 
 ```bash
 cd worker
@@ -62,75 +109,61 @@ npm install
 npm run deploy
 ```
 
-## 步骤 5: 配置前端
-
-创建 `frontend/.env.local`:
-```env
-VITE_API_URL=https://your-worker-name.your-username.workers.dev
-```
-
-## 步骤 6: 部署前端
-
-前端可以部署到：
-- Cloudflare Pages (推荐)
-- Vercel
-- Netlify
-
-### Cloudflare Pages 部署：
+### 5. 部署前端 (Cloudflare Pages)
 
 ```bash
 cd frontend
 npm install
 npm run build
-# 在 Cloudflare Dashboard 中创建 Pages 项目并上传 dist 文件夹
 ```
 
-## 本地开发
+在 Cloudflare Dashboard 中创建 Pages 项目，上传 `dist` 文件夹。
 
-### 后端：
-```bash
-cd worker
-npm install
-npm run dev
-```
-
-### 前端：
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-## 功能说明
-
-- ✅ 发送文字留言
-- ✅ 上传图片 (jpg, png, gif, webp)
-- ✅ 上传视频 (mp4, webm, mov)
-- ✅ 单文件最大 10MB
-- ✅ 最多 5 个附件
-- ✅ 留言按时间倒序排列
-
-## 注意事项
-
-1. R2 存储需要设置公开访问才能显示图片/视频
-2. 免费额度：
-   - Workers: 每天 10 万次请求
-   - KV: 1000 次读/写操作
-   - R2: 每月 10GB 存储 + 10GB 带宽
-
-## 文件结构
+## 📁 项目结构
 
 ```
-留言板/
+guestbook/
 ├── worker/              # Cloudflare Workers 后端
-│   ├── src/index.ts     # API 逻辑
+│   ├── src/
+│   │   └── index.ts     # API 路由
 │   ├── package.json
+│   ├── tsconfig.json
 │   └── wrangler.toml    # 部署配置
 ├── frontend/            # React 前端
 │   ├── src/
-│   │   ├── App.tsx
-│   │   └── components/
+│   │   ├── App.tsx      # 主组件
+│   │   ├── main.tsx     # 入口文件
+│   │   └── components/  # 组件
+│   │       ├── MessageForm.tsx
+│   │       └── MessageList.tsx
+│   ├── index.html
 │   ├── package.json
-│   └── vite.config.ts
+│   ├── vite.config.ts
+│   └── tsconfig.json
 └── README.md
 ```
+
+## 🔧 API 接口
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/api/messages` | 获取所有留言 |
+| POST | `/api/messages` | 创建留言 |
+| POST | `/api/upload` | 上传文件 |
+| GET | `/files/:key` | 获取文件 |
+
+## 💰 免费额度
+
+| 服务 | 额度 |
+|------|------|
+| Workers | 每天 10 万次请求 |
+| KV | 1000 次读/写操作/月 |
+| R2 | 10GB 存储 + 10GB 带宽/月 |
+
+## 🤝 贡献
+
+欢迎提交 Issue 和 Pull Request！
+
+## 📝 许可证
+
+MIT License
