@@ -119,8 +119,7 @@ export const FRONTEND_HTML = `
     
     // Backblaze B2 配置
     const B2_CONFIG = {
-      bucketName: 'guestbook',
-      endpoint: 'https://s3.us-west-004.backblazeb2.com'
+      bucketName: 'my-upload-files'
     };
 
     document.getElementById('fileInput').addEventListener('change', (e) => {
@@ -198,7 +197,7 @@ export const FRONTEND_HTML = `
 
     // 获取文件下载链接
     function getDownloadUrl(fileName) {
-      return B2_CONFIG.endpoint + '/' + B2_CONFIG.bucketName + '/' + fileName;
+      return 'https://f004.backblazeb2.com/file/' + B2_CONFIG.bucketName + '/' + fileName;
     }
 
     async function fetchMessages() {
