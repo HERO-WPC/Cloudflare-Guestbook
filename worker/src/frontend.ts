@@ -154,40 +154,22 @@ export const FRONTEND_HTML = `
       renderPreviews();
     };
 
-    // 生成授权 Token
-    async function getAuthToken() {
-      const res = await fetch(API_BASE + '/api/b2-auth');
-      const data = await res.json();
-      return data;
-    }
+    // 上传文件到 0x0.st
+    async function uploadFile(file) {
+      const formData = new FormData();
+      formData.append('file', file);
 
-    // 上传文件到 B2
-    async function uploadToB2(file) {
-      const auth = await getAuthToken();
-      if (!auth.success) {
-        throw new Error('获取上传凭证失败');
-      }
-
-      const fileName = Date.now() + '-' + Math.random().toString(36).slice(2) + '-' + file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-      
-      // 直接上传文件，使用 /api/b2-auth 返回的信息
-      const arrayBuffer = await file.arrayBuffer();
-      const uploadFileRes = await fetch(auth.data.uploadUrl, {
+      const res = await fetch(API_BASE + '/api/upload', {
         method: 'POST',
-        headers: {
-          'Authorization': auth.data.authorizationToken,
-          'X-Bz-File-Name': fileName,
-          'Content-Type': file.type || 'application/octet-stream',
-          'X-Bz-Content-Sha1': 'do_not_verify'
-        },
-        body: arrayBuffer
+        body: formData
       });
 
-      if (!uploadFileRes.ok) {
-        throw new Error('上传失败');
+      const data = await res.json();
+      if (data.success) {
+        return data.data.url;
+      } else {
+        throw new Error(data.error || '上传失败');
       }
-
-      return fileName;
     }
 
     // 获取文件下载链接（0x0.st 直接返回 URL）
@@ -241,8 +223,8 @@ export const FRONTEND_HTML = `
         const uploadedFiles = [];
         for (const file of files) {
           btn.textContent = '上传 ' + file.name + '...';
-          const fileName = await uploadToB2(file);
-          uploadedFiles.push(fileName);
+          const fileUrl = await uploadFile(file);
+          uploadedFiles.push(fileUrl);
         }
         
         btn.textContent = '发送中...';
