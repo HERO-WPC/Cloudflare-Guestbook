@@ -4,9 +4,6 @@ import { FRONTEND_HTML } from './frontend'
 
 interface Env {
   MESSAGES: KVNamespace
-  B2_AUTH: string
-  B2_BUCKET_ID: string
-  B2_BUCKET_NAME: string
 }
 
 interface Message {
@@ -35,87 +32,11 @@ app.use('/*', cors({
   allowHeaders: ['Content-Type'],
 }))
 
-// 上传文件到 0x0.st（免费匿名文件托管，最大 1GB）
+// 文件上传功能已移除
 app.post('/api/upload', async (c) => {
-  try {
-    const formData = await c.req.formData()
-    const file = formData.get('file')
-
-    if (!file || !(file instanceof File)) {
-      return c.json({ success: false, error: '没有文件' }, 400)
-    }
-
-    const fileData = await file.arrayBuffer()
-
-    // 上传到 0x0.st
-    const res = await fetch('https://0x0.st', {
-      method: 'POST',
-      body: new URLSearchParams({
-        file: new Blob([fileData], { type: file.type }),
-        name: file.name
-      })
-    })
-
-    if (!res.ok) {
-      const errorText = await res.text()
-      console.error('上传失败:', errorText)
-      return c.json({ success: false, error: '上传失败' }, 500)
-    }
-
-    const fileUrl = await res.text()
-
-    return c.json({ success: true, data: { url: fileUrl.trim(), key: file.name } })
-  } catch (error) {
-    console.error('上传错误:', error)
-    return c.json({ success: false, error: '上传失败' }, 500)
-  }
+  return c.json({ success: false, error: '文件上传功能已禁用' }, 400)
 })
-app.get('/api/b2-auth', async (c) => {
-  try {
-    const auth = c.env.B2_AUTH
-    if (!auth) {
-      return c.json({ success: false, error: '未配置 B2 授权' }, 500)
-    }
-    
-    // 解析 Base64 编码的授权信息
-    const decoded = atob(auth)
-    const [keyID, applicationKey] = decoded.split(':')
-    
-    // 获取 Authorization Token
-    const authRes = await fetch('https://api.backblazeb2.com/b2api/v3/b2_authorize_account', {
-      headers: {
-        'Authorization': 'Basic ' + btoa(keyID + ':' + applicationKey)
-      }
-    })
-    
-    if (!authRes.ok) {
-      return c.json({ success: false, error: 'B2 授权失败' }, 500)
-    }
-    
-    const authData = await authRes.json()
-    
-    // 获取上传 URL
-    const bucketRes = await fetch(`https://api.backblazeb2.com/b2api/v3/b2_get_upload_url?bucketId=${c.env.B2_BUCKET_ID}`, {
-      headers: {
-        'Authorization': authData.authorizationToken
-      }
-    })
-    
-    const bucketData = await bucketRes.json()
-    
-    return c.json({
-      success: true,
-      data: {
-        authorizationToken: authData.authorizationToken,
-        uploadUrl: bucketData.uploadUrl,
-        apiUrl: authData.apiUrl,
-        bucketId: bucketData.bucketId
-      }
-    })
-  } catch (error) {
-    return c.json({ success: false, error: '获取 B2 授权失败' }, 500)
-  }
-})
+
 
 // 获取所有留言
 app.get('/api/messages', async (c) => {

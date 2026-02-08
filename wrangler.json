@@ -9,9 +9,6 @@
     }
   ],
   "vars": {
-    "B2_AUTH": "",
-    "B2_BUCKET_ID": "",
-    "B2_BUCKET_NAME": "",
     "IMGBB_API_KEY": "你的ImgBB_API_Key"
   }
 }
