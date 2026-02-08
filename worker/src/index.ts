@@ -35,7 +35,7 @@ app.use('/*', cors({
   allowHeaders: ['Content-Type'],
 }))
 
-// 上传文件到 B2
+// 上传文件到 B2 (使用 S3 兼容 API)
 app.post('/api/upload', async (c) => {
   try {
     const formData = await c.req.formData()
@@ -45,59 +45,35 @@ app.post('/api/upload', async (c) => {
       return c.json({ success: false, error: '没有文件' }, 400)
     }
 
-    const auth = c.env.B2_AUTH
-    if (!auth) {
-      return c.json({ success: false, error: '未配置 B2 授权' }, 500)
+    const B2_AUTH = c.env.B2_AUTH
+    const B2_BUCKET_NAME = c.env.B2_BUCKET_NAME
+    if (!B2_AUTH || !B2_BUCKET_NAME) {
+      return c.json({ success: false, error: '未配置 B2' }, 500)
     }
 
     // 解析 Base64 编码的授权信息
-    const decoded = atob(auth)
+    const decoded = atob(B2_AUTH)
     const [keyID, applicationKey] = decoded.split(':')
 
     // 获取 Authorization Token
     const authRes = await fetch('https://api.backblazeb2.com/b2api/v3/b2_authorize_account', {
-      headers: {
-        'Authorization': 'Basic ' + btoa(keyID + ':' + applicationKey)
-      }
+      headers: { 'Authorization': 'Basic ' + btoa(keyID + ':' + applicationKey) }
     })
 
     if (!authRes.ok) {
-      const errorText = await authRes.text()
-      console.error('B2 授权失败:', authRes.status, errorText)
-      return c.json({ success: false, error: 'B2 授权失败: ' + authRes.status }, 500)
+      return c.json({ success: false, error: 'B2 授权失败' }, 500)
     }
 
     const authData = await authRes.json()
-    console.log('B2 授权成功, bucketId:', c.env.B2_BUCKET_ID)
-
-    // 获取上传 URL
-    const bucketRes = await fetch(`https://api.backblazeb2.com/b2api/v3/b2_get_upload_url?bucketId=${c.env.B2_BUCKET_ID}`, {
-      headers: {
-        'Authorization': authData.authorizationToken
-      }
-    })
-
-    if (!bucketRes.ok) {
-      const errorText = await bucketRes.text()
-      console.error('获取上传 URL 失败:', bucketRes.status, errorText)
-      return c.json({ success: false, error: '获取上传 URL 失败: ' + bucketRes.status }, 500)
-    }
-
-    const bucketData = await bucketRes.json()
-    console.log('获取上传 URL 成功:', bucketData.uploadUrl)
-
-    // 生成唯一文件名
-    const ext = file.name.split('.').pop() || ''
-    const fileName = `${Date.now()}-${generateUUID()}.${ext}`
+    const fileName = `${Date.now()}-${generateUUID()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`
     const fileData = await file.arrayBuffer()
 
-    // 上传到 B2
-    const uploadRes = await fetch(bucketData.uploadUrl, {
-      method: 'POST',
+    // 使用 S3 兼容 API 直接上传
+    const uploadRes = await fetch(`https://s3.us-west-004.backblazeb2.com/${B2_BUCKET_NAME}/${fileName}`, {
+      method: 'PUT',
       headers: {
-        'Authorization': bucketData.authorizationToken,
-        'X-Bz-File-Name': fileName,
-        'Content-Type': file.type,
+        'Authorization': authData.authorizationToken,
+        'Content-Type': file.type || 'application/octet-stream',
         'X-Bz-Content-Sha1': 'do_not_verify'
       },
       body: fileData
@@ -105,20 +81,13 @@ app.post('/api/upload', async (c) => {
 
     if (!uploadRes.ok) {
       const errorText = await uploadRes.text()
-      console.error('B2 上传失败:', uploadRes.status, errorText)
-      return c.json({ success: false, error: `上传失败: ${uploadRes.status} - ${errorText.substring(0, 200)}` }, 500)
+      return c.json({ success: false, error: `上传失败: ${uploadRes.status}` }, 500)
     }
 
-    // 返回文件访问 URL (使用公开 URL)
-    const fileUrl = `${authData.downloadUrl}/file/${c.env.B2_BUCKET_NAME}/${fileName}`
+    // 返回文件访问 URL
+    const fileUrl = `https://f004.backblazeb2.com/file/${B2_BUCKET_NAME}/${fileName}`
 
-    return c.json({
-      success: true,
-      data: {
-        url: fileUrl,
-        key: fileName
-      }
-    })
+    return c.json({ success: true, data: { url: fileUrl, key: fileName } })
   } catch (error) {
     console.error('上传错误:', error)
     return c.json({ success: false, error: '上传失败' }, 500)
