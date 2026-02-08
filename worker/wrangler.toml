@@ -1,0 +1,14 @@
+name = "guestbook-worker"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+
+[[kv_namespaces]]
+binding = "MESSAGES"
+id = "YOUR_KV_ID"
+
+[[r2_buckets]]
+binding = "FILES"
+bucket_name = "guestbook-files"
+
+[vars]
+WORKER_URL = "https://your-worker.your-subdomain.workers.dev"
